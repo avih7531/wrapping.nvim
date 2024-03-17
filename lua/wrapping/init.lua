@@ -1,11 +1,10 @@
--- wrapping.nvim.lua
-
 local M = {}
 
 local utils = require("wrapping.utils")
 local treesitter = require("wrapping.treesitter")
 
 local OPTION_DEFAULTS = {
+    -- Existing options
     set_nvim_opt_defaults = true,
     softener = {
         default = 1.0,
@@ -68,11 +67,9 @@ local function soft_wrap_mode_quiet()
         return false
     end
 
-    -- Save prior textwidth
     vim.b.hard_textwidth =
         vim.api.nvim_get_option_value("textwidth", { buf = 0 })
 
-    -- Effectively disable textwidth (setting it to 0 makes it act like 79 for gqxx)
     vim.api.nvim_set_option_value(
         "textwidth",
         VERY_LONG_TEXTWIDTH_FOR_SOFT,
@@ -346,9 +343,9 @@ M.setup = function(o)
         },
         notify_on_switch = { opts.notify_on_switch, "boolean" },
         log_path = { opts.log_path, "string" },
-        indicator_icon = { opts.indicator_icon, "string" }, -- New option for indicator icon
-        indicator_color = { opts.indicator_color, "string" }, -- New option for indicator color
-        indicator_position = { opts.indicator_position, "string", true } -- New option for indicator position
+        indicator_icon = { opts.indicator_icon, "string" },
+        indicator_color = { opts.indicator_color, "string" },
+        indicator_position = { opts.indicator_position, "string", true }
     })
 
     if
@@ -418,6 +415,14 @@ M.setup = function(o)
         opts.indicator_color
     )
     vim.cmd(highlight_cmd)
+
+    -- Insert indicator icon at line wrap positions
+    vim.api.nvim_exec([[
+        augroup wrapping_nvim_indicator
+            autocmd!
+            autocmd TextChangedI * lua require('wrapping.indicator').add()
+        augroup END
+    ]], false)
 end
 
 if vim.fn.has("nvim-0.8.0") ~= 1 then
@@ -430,4 +435,3 @@ if vim.fn.has("nvim-0.8.0") ~= 1 then
 end
 
 return M
-
