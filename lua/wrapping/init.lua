@@ -2,6 +2,9 @@
 
 local M = {}
 
+local utils = require("wrapping.utils")
+local treesitter = require("wrapping.treesitter")
+
 local OPTION_DEFAULTS = {
     set_nvim_opt_defaults = true,
     softener = {
