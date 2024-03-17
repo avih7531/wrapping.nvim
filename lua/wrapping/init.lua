@@ -1,13 +1,12 @@
-local M = {}
+-- wrapping.nvim.lua
 
-local utils = require("wrapping.utils")
-local treesitter = require("wrapping.treesitter")
+local M = {}
 
 local OPTION_DEFAULTS = {
     set_nvim_opt_defaults = true,
     softener = {
         default = 1.0,
-        gitcommit = false, -- Based on https://stackoverflow.com/a/2120040/27641
+        gitcommit = false,
     },
     create_commands = true,
     create_keymaps = true,
@@ -22,7 +21,7 @@ local OPTION_DEFAULTS = {
         "rst",
         "tex",
         "text",
-        "typst", -- Supported from NeoVim 0.10+
+        "typst",
     },
     auto_set_mode_filetype_denylist = {},
     excluded_treesitter_queries = {
@@ -36,6 +35,10 @@ local OPTION_DEFAULTS = {
     },
     notify_on_switch = true,
     log_path = utils.get_log_path(),
+    -- New configuration options for indicators
+    indicator_icon = "󱞩",
+    indicator_color = "cyan",
+    indicator_position = "beginning",
 }
 
 local VERY_LONG_TEXTWIDTH_FOR_SOFT = 999999
@@ -153,9 +156,6 @@ local function get_softener()
 end
 
 local function likely_nontextual_language()
-    -- If an LSP provider supports these capabilities it's almost certainly not
-    -- a textual language, and therefore we should use hard wrapping
-
     for _, client in pairs(vim.lsp.buf_get_clients(0)) do
         if client.definitionProvider or client.signatureHelpProvider then
             return true
@@ -181,8 +181,6 @@ local function likely_textwidth_set_deliberately()
         textwidth_global ~= textwidth_buffer
         and textwidth_buffer ~= VERY_LONG_TEXTWIDTH_FOR_SOFT
     then
-        -- textwidth has probably been set by a modeline, autocmd or
-        -- filetype/x.{lua.vim} deliberately
         return true
     end
 
@@ -281,10 +279,6 @@ M.set_mode_heuristically = function()
     end
 
     if hard_textwidth_for_comparison == 0 then
-        -- 0 is effectively treated like 'infinite' line length. It's also the
-        -- default, and many folks won't change it from that. Based upon that,
-        -- we're deciding here that we are going to treat it like it is set to
-        -- VERY_LONG_TEXTWIDTH_FOR_SOFT for the purposes of calculation.
         hard_textwidth_for_comparison = VERY_LONG_TEXTWIDTH_FOR_SOFT
         log("Forcing very long textwidth")
     end
@@ -349,6 +343,9 @@ M.setup = function(o)
         },
         notify_on_switch = { opts.notify_on_switch, "boolean" },
         log_path = { opts.log_path, "string" },
+        indicator_icon = { opts.indicator_icon, "string" }, -- New option for indicator icon
+        indicator_color = { opts.indicator_color, "string" }, -- New option for indicator color
+        indicator_position = { opts.indicator_position, "string", true } -- New option for indicator position
     })
 
     if
@@ -406,13 +403,18 @@ M.setup = function(o)
     end
 
     if opts.auto_set_mode_heuristically then
-        -- We use BufWinEnter as it is fired after modelines are processed, so
-        -- we can use what's in there.
         vim.api.nvim_create_autocmd("BufWinEnter", {
             group = vim.api.nvim_create_augroup("wrapping", {}),
             callback = auto_heuristic,
         })
     end
+
+    -- Setup indicator highlighting
+    local highlight_cmd = string.format(
+        "highlight WrapIndicator guifg=%s",
+        opts.indicator_color
+    )
+    vim.cmd(highlight_cmd)
 end
 
 if vim.fn.has("nvim-0.8.0") ~= 1 then
@@ -425,3 +427,4 @@ if vim.fn.has("nvim-0.8.0") ~= 1 then
 end
 
 return M
+
